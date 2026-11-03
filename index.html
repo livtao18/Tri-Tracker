@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b7aa8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Tri Tracker</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#14202b;--mut:#5d6b78;--ac:#0b7aa8;--ln:#d9e0e6;--ok:#1d9a5b;--on:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root{--bg:#0f161c;--card:#18222b;--tx:#e8eef3;--mut:#9aa9b6;--ac:#4cc2ee;--ln:#2a3844;--ok:#43c985;--on:#08202b;color-scheme:dark}}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:560px;margin:0 auto;padding:16px}
+h1{font-size:1.4rem;margin:4px 0}
+.sub{color:var(--mut);font-size:.9rem;margin:0 0 8px}
+.bar{height:8px;background:var(--ln);border-radius:4px;overflow:hidden;margin:6px 0 12px}
+.bar i{display:block;height:100%;background:var(--ok);width:0}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;max-width:100%}
+.chip{flex:0 0 auto;min-width:40px;height:40px;border-radius:20px;border:1px solid var(--ln);background:var(--card);color:var(--tx);font:inherit;font-weight:600;padding:0 6px}
+.chip.sel{background:var(--ac);color:var(--on);border-color:var(--ac)}
+.chip.done:not(.sel){border-color:var(--ok);color:var(--ok)}
+.chip.now:not(.sel){border-style:dashed;border-color:var(--ac)}
+h2{font-size:1.1rem;margin:14px 0 2px}
+.note{color:var(--mut);font-size:.9rem;margin:2px 0}
+.card{background:var(--card);border:1px solid var(--ln);border-radius:14px;padding:10px 14px;margin:10px 0}
+.card.today{border-color:var(--ac);border-width:2px}
+.card h3{margin:0 0 4px;font-size:1rem}
+.task{padding:8px 0;border-top:1px solid var(--ln)}
+.task:first-of-type{border-top:0}
+.row{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.nm{font-weight:600}
+.cnt{color:var(--mut);font-size:.85rem;white-space:nowrap}
+.dots{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.dot{width:40px;height:40px;border-radius:50%;border:2px solid var(--ac);background:transparent;color:var(--ac);font:inherit;font-weight:600;padding:0}
+.dot.on{background:var(--ok);border-color:var(--ok);color:var(--on)}
+.tools{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 4px}
+.b{background:none;border:1px solid var(--ln);color:var(--tx);border-radius:8px;padding:8px 12px;font:inherit}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Tri Tracker</h1>
+  <p class="sub" id="sum"></p>
+  <div class="bar"><i id="bar"></i></div>
+  <div class="chips" id="chips"></div>
+  <div id="app"></div>
+  <div class="tools">
+    <button class="b" id="rst">Reset this week</button>
+    <button class="b" id="exp">Export backup</button>
+    <button class="b" id="imp">Import backup</button>
+    <input type="file" id="file" accept=".json,application/json" hidden>
+  </div>
+  <p class="note" id="msg">Tap a circle when you finish a rep or session. Data stays on this device.</p>
+</div>
+<script>
+var D0=new Date(2026,10,2),DN=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],KEY="triTracker1",NW=40;
+var REC=[3,7,9,13,17,21,26,30,34],st={},cur=0;
+var T=function(l,r){return [l,r||1];};
+var WU=T("Warm-up, 4-5 min easy"),CD=T("Cooldown, 2 min easy"),ST=T("Strength, 20 min"),PB=T("Pickleball, 2 hr relaxed");
+var P1=[
+{dr:[["Bobs and bubbles",10,"at the wall"],["Kick with board",3,"25"],["Side kick",4,"25"]],mr:10,mu:"25",bike:30,run:"1/2 x 8"},
+{dr:[["Bobs and bubbles",10,"at the wall"],["Kick with board",4,"25"],["Side kick",4,"25"],["Easy swim",2,"25"]],mr:6,mu:"50",bike:35,run:"2/2 x 7"},
+{dr:[["Kick with board",3,"25"],["Side kick",4,"25"],["Catch-up",4,"25"],["Easy swim",2,"25"]],mr:8,mu:"50",bike:40,run:"3/2 x 6"},
+{dr:[["Bobs and bubbles",10,"at the wall"],["Kick with board",2,"25"],["Side kick",4,"25"],["Catch-up",2,"25"]],mr:6,mu:"50",bike:30,run:"2/2 x 6"},
+{dr:[["Kick with board",4,"25"],["Side kick",4,"25"],["Catch-up",4,"25"],["Fingertip drag",2,"25"],["Swim, breathe every 3",2,"25"]],mr:10,mu:"50",bike:45,run:"4/1 x 6"},
+{dr:[["Kick with board",4,"25"],["Catch-up",4,"25"],["Fingertip drag",4,"25"],["Swim, breathe every 3",4,"25"]],mr:4,mu:"100",bike:50,run:"5/1 x 5"},
+{dr:[["Kick with board",4,"25"],["Catch-up",2,"50"],["Fingertip drag",2,"50"],["Swim, breathe every 3",2,"50"]],mr:5,mu:"100",bike:55,run:"8/1 x 3"},
+{dr:[["Kick with board",2,"25"],["Catch-up",2,"50"],["Swim, breathe every 3",2,"50"]],mr:4,mu:"100",bike:35,run:"4/1 x 5"},
+{dr:[["Kick with board",4,"25"],["Catch-up",2,"50"],["Fingertip drag",2,"50"],["Swim, breathe every 3",3,"50"]],mr:6,mu:"100",bike:60,run:"10/1 x 3"},
+{dr:[["Kick with board",2,"25"],["Catch-up",2,"50"],["Easy swim",4,"50"]],mr:4,mu:"100",bike:40,run:"15-20 min continuous"}
+];
+var P2=[["6 x 100",6,8,1.5],["3 x 200",3,9,1.75],["300 straight + 3 x 100",1,10,2],["4 x 100",4,8,1.5],["400 straight + 2 x 100",1,11,2.25],["400 straight + 4 x 100",1,12,2.5],["500 straight + 3 x 100",1,13,2.75],["3 x 200",3,10,2],["400 straight + 4 x 100",1,13,3],["600 straight",1,14,3.25],["600 straight + 2 x 100",1,15,3.5],["400 easy",1,11,2.5],["800 straight or 8 x 100",1,15,3.75],["600 straight + 4 x 50 quick",1,"15-16 (hilly)",4]];
+var P3=[["700 straight","2 x 10 min",15,"3 mi",4,5],["800","2 x 12 min",16,"3.1 mi",4,8],["500","20 min",12,"2.5 mi",3,5],["800, open water if possible","3 x 10 min",17,"3.1 mi",4.5,10],["800","3 x 12 min",18,"3.1 mi",5,10],["900","2 x 20 min",18,"3.1 mi",5,10],["600","25 min",13,"2.5 mi",3.5,5],["900, open water","2 x 20 min",18,"3.1 mi, fast last mile",5,10],["900","40 min",18,"3.1 mi test effort",4.5,12],["800","35 min",17,"3.1 mi",4,10],["600","25 min",12,"2.5 mi",3,5]];
+var TP=[
+[[],["Swim 500","Run 3 mi"],["Bike 12 mi","Tempo 20 min"],["Swim 500","Strength, light"],["Pickleball, relaxed"],["Brick: ride 6 mi","Run 5 min right after"],["Run 2.5 mi"]],
+[[],["Swim 400 + 300, with 4 x 50 pickups","Run 2.5 mi easy, 2 x 1 min pickups"],["Bike 10 mi easy","20 min with 4 x 1 min hard"],["Strength, light"],["Pickleball, relaxed"],[],[]],
+[[],["Swim, 15-20 min easy"],["Ride, 15-20 min easy"],["Run, 15-20 min easy"],["Pickleball, last one, easy (no later than Jul 30)"],["Gear check and transition walk-through"],[]],
+[["Full rest, lay out gear, early bedtime"],["RACE DAY: 400 m swim, 8 mi bike, 5K run"],[],[],[],[],[]]
+];
+function plan(w){
+  var t=[[],[],[],[],[],[],[]],n="Rest, or an optional second pickleball session.";
+  if(w<10){var x=P1[w];
+    t[1]=[WU].concat(x.dr.map(function(s){return T(s[0]+", "+(/^\d+$/.test(s[2])?s[1]+" x "+s[2]:s[2]),s[1]);}),[CD,T("Run/walk "+x.run)]);
+    t[3]=[WU,T("Freestyle, "+x.mr+" x "+x.mu,x.mr),CD,ST];t[4]=[PB];t[5]=[T("Bike, "+x.bike+" min easy")];t[6]=[T("Run/walk "+x.run)];
+  }else if(w<24){var q=P2[w-10],ride=w<14?45:w<18?50:60,run=w<14?20:w<18?25:30;
+    t[1]=[T("Swim technique, 30 min drills"),T("Easy run, "+run+" min")];t[2]=[T("Easy ride, "+ride+" min (skip if 2 pickleball)")];
+    t[3]=[T("Swim, "+q[0],q[1]),ST];t[4]=[PB];t[5]=[T("Long ride, "+q[2]+" mi")];t[6]=[T("Long run, "+q[3]+" mi (run/walk ok)")];
+  }else if(w===35){
+    t[1]=[T("Swim technique, 20 min"),T("Easy run, 2 mi")];t[2]=[T("Easy ride, 30 min")];t[3]=[ST];t[4]=[];
+    t[5]=[T("Race simulation: 400 m swim"),T("8 mi bike"),T("5K run (easy-moderate, real transitions)")];n="No pickleball this week.";
+  }else if(w<36){var q=P3[w-24];
+    t[1]=[T("Swim technique, 30 min"),T("Steady run, "+q[3])];t[2]=[T("Tempo ride, "+q[1])];t[3]=[T("Swim, "+q[0]),ST];t[4]=[PB];
+    t[5]=[T("Long ride, "+q[2]+" mi"),T("Brick run right after, "+q[5]+" min")];t[6]=[T("Easy run, "+q[4]+" mi")];
+  }else{t=TP[w-36].map(function(a){return a.map(function(l){return T(l);});});n=w===39?"No pickleball this week.":"Keep everything easy and short.";}
+  return {t:t,n:n};
+}
+function dt(w,i){var d=new Date(D0.getTime());d.setDate(d.getDate()+w*7+i);return d;}
+function fmt(d){return d.toLocaleDateString(undefined,{month:"short",day:"numeric"});}
+function cnt(w){var p=plan(w),a=0,b=0;p.t.forEach(function(d,i){d.forEach(function(s,j){for(var k=0;k<s[1];k++){a++;if(st[w+"."+i+"."+j+"."+k])b++;}});});return [b,a];}
+function weekNow(){return Math.max(0,Math.min(NW-1,Math.floor((Date.now()-D0.getTime())/6048e5)));}
+function render(){
+  var T0=0,D=0,ch="",wn=weekNow();
+  for(var w=0;w<NW;w++){var c=cnt(w);T0+=c[1];D+=c[0];ch+='<button class="chip'+(w===cur?" sel":"")+(c[0]===c[1]?" done":"")+(w===wn?" now":"")+'" data-w="'+w+'">'+(w+1)+'</button>';}
+  document.getElementById("chips").innerHTML=ch;
+  document.getElementById("sum").textContent=D+" of "+T0+" done across "+NW+" weeks. Race: Tue, Aug 3, 2027";
+  document.getElementById("bar").style.width=Math.round(100*D/T0)+"%";
+  var p=plan(cur),h='<h2>Week '+(cur+1)+', starts '+fmt(dt(cur,0))+'</h2>'+(REC.indexOf(cur)>-1?'<p class="note">Recovery week: play pickleball once only.</p>':'')+'<p class="note">'+(cur<10?"Phase 1: Base":cur<24?"Phase 2: Build":cur<36?"Phase 3: Race-specific":"Taper and race")+'</p>',today=fmt(new Date());
+  p.t.forEach(function(d,i){
+    var isT=fmt(dt(cur,i))===today&&dt(cur,i).getFullYear()===new Date().getFullYear();
+    h+='<div class="card'+(isT?" today":"")+'"><h3>'+DN[i]+', '+fmt(dt(cur,i))+(isT?" (today)":"")+'</h3>';
+    if(!d.length)h+='<p class="note">'+(i===0?p.n:"Rest")+'</p>';
+    d.forEach(function(s,j){
+      var n=0,dots="";
+      for(var k=0;k<s[1];k++){var id=cur+"."+i+"."+j+"."+k,on=st[id];if(on)n++;dots+='<button class="dot'+(on?" on":"")+'" data-id="'+id+'" aria-pressed="'+(on?"true":"false")+'">'+(s[1]>1?k+1:"\u2713")+'</button>';}
+      h+='<div class="task"><div class="row"><span class="nm">'+s[0]+'</span>'+(s[1]>1?'<span class="cnt">'+n+'/'+s[1]+'</span>':"")+'</div><div class="dots">'+dots+'</div></div>';
+    });
+    if(i===0&&d.length)h+='<p class="note">'+p.n+'</p>';
+    h+='</div>';
+  });
+  document.getElementById("app").innerHTML=h;
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(Object.keys(st)));}catch(e){}}
+function say(m){document.getElementById("msg").textContent=m;}
+document.addEventListener("click",function(e){
+  var t=e.target;
+  if(t.classList.contains("dot")){var id=t.getAttribute("data-id");if(st[id])delete st[id];else st[id]=1;save();render();}
+  else if(t.classList.contains("chip")){cur=+t.getAttribute("data-w");render();}
+});
+document.getElementById("rst").onclick=function(){
+  if(!confirm("Clear all checkmarks for week "+(cur+1)+"?"))return;
+  Object.keys(st).forEach(function(k){if(k.split(".")[0]==cur)delete st[k];});save();render();
+};
+document.getElementById("exp").onclick=function(){
+  var b=new Blob([JSON.stringify({v:1,done:Object.keys(st)})],{type:"application/json"}),a=document.createElement("a");
+  a.href=URL.createObjectURL(b);a.download="tri-tracker-backup.json";document.body.appendChild(a);a.click();a.remove();say("Backup exported. Save the file somewhere safe.");
+};
+document.getElementById("imp").onclick=function(){document.getElementById("file").click();};
+document.getElementById("file").onchange=function(e){
+  var f=e.target.files[0];if(!f)return;var r=new FileReader();
+  r.onload=function(){try{var o=JSON.parse(r.result);(o.done||[]).forEach(function(k){st[k]=1;});save();render();say("Backup imported.");}catch(x){say("That file is not a valid backup.");}};
+  r.readAsText(f);e.target.value="";
+};
+try{JSON.parse(localStorage.getItem(KEY)||"[]").forEach(function(k){st[k]=1;});}catch(e){}
+cur=weekNow();render();
+var cs=document.querySelector(".chip.sel");if(cs&&cs.scrollIntoView)cs.scrollIntoView({inline:"center",block:"nearest"});
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(function(){});
+</script>
+</body>
+</html>
