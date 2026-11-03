@@ -85,7 +85,8 @@ function plan(w){
   var t=[[],[],[],[],[],[],[]],n="Rest, or an optional second pickleball session.";
   if(w<10){var x=P1[w];
     t[1]=[WU].concat(x.dr.map(function(s){return T(s[0]+", "+(/^\d+$/.test(s[2])?s[1]+" x "+s[2]:s[2]),s[1]);}),[CD,T("Run/walk "+x.run)]);
-    t[3]=[WU,T("Freestyle, "+x.mr+" x "+x.mu,x.mr),CD,ST];t[4]=[PB];t[5]=[T("Bike, "+x.bike+" min easy")];t[6]=[T("Run/walk "+x.run)];
+    t[2]=[T("Easy ride, "+(w<4?30:w<8?35:40)+" min (skip if 2 pickleball)")];
+    t[3]=[WU,T("Freestyle, "+x.mr+" x "+x.mu,x.mr),CD,ST];t[4]=[PB];t[5]=[T("Long ride, "+x.bike+" min easy")];t[6]=[T("Run/walk "+x.run)];
   }else if(w<24){var q=P2[w-10],ride=w<14?45:w<18?50:60,run=w<14?20:w<18?25:30;
     t[1]=[T("Swim technique, 30 min drills"),T("Easy run, "+run+" min")];t[2]=[T("Easy ride, "+ride+" min (skip if 2 pickleball)")];
     t[3]=[T("Swim, "+q[0],q[1]),ST];t[4]=[PB];t[5]=[T("Long ride, "+q[2]+" mi")];t[6]=[T("Long run, "+q[3]+" mi (run/walk ok)")];
